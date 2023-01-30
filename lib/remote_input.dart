@@ -45,10 +45,10 @@ class NotificationEvent {
 
   String toJson() {
     Map<String, dynamic> map = Map();
-    map['1'] = id;
-    map['2'] = packageName;
-    map['3'] = packageTitle;
-    map['4'] = packageMessage;
+    map['id'] = id;
+    // map['2'] = packageName;
+    map['title'] = packageTitle;
+    map['message'] = packageMessage;
     return jsonEncode(map);
   }
 

@@ -16,8 +16,8 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   String _platformVersion = 'Unknown';
-  RemoteInput _remoteInput;
-  StreamSubscription<NotificationEvent> _subscription;
+  late RemoteInput _remoteInput;
+  late StreamSubscription<NotificationEvent> _subscription;
   List<NotificationEvent> _log = [];
   bool started = false;
 
@@ -128,7 +128,7 @@ class _MyAppState extends State<MyApp> {
 class ReplyDialog extends StatelessWidget {
   final TextEditingController controller;
   final VoidCallback callback;
-  const ReplyDialog(this.controller, this.callback, {Key key})
+  const ReplyDialog(this.controller, this.callback, {Key? key})
       : super(key: key);
 
   @override

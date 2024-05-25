@@ -6,6 +6,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.os.Build
 import android.provider.Settings
 import android.text.TextUtils
 import androidx.annotation.NonNull
@@ -78,7 +79,9 @@ class RemoteInputPlugin: FlutterPlugin, MethodCallHandler, EventChannel.StreamHa
     val receiver = eventSink?.let { NotificationReceiver(it) }
     val intentFilter = IntentFilter()
     intentFilter.addAction(NotificationListener.NOTIFICATION_INTENT)
-    context!!.registerReceiver(receiver, intentFilter)
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+      context!!.registerReceiver(receiver, intentFilter, Context.RECEIVER_EXPORTED)
+    }
 
     /* Start the notification service once permission has been given. */
     val listenerIntent = Intent(context, NotificationListener::class.java)

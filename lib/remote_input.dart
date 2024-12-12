@@ -52,6 +52,19 @@ class NotificationEvent {
     return jsonEncode(map);
   }
 
+  String toWatchString() {
+    Map<String, dynamic> map = Map();
+    map['id'] = id;
+    map['title'] = packageTitle;
+    if (packageMessage.length > 128) {
+      // split packageMessage to 128 characters
+      map['message'] = packageMessage.substring(0, 128);
+    } else {
+      map['message'] = packageMessage;
+    }
+    return jsonEncode(map);
+  } // For Watch
+
   @override
   String toString() {
     return "通知事件 Notification Event \n - ID: $id - Package Name: $packageName \n - Package Title: $packageTitle \n - Package Message: $packageMessage";

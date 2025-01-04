@@ -24,6 +24,7 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
+    _remoteInput = new RemoteInput();
     initPlatformState();
   }
 
@@ -43,7 +44,7 @@ class _MyAppState extends State<MyApp> {
       _platformVersion = platformVersion;
     });
 
-    startListening();
+    // startListening();
   }
 
   void onData(NotificationEvent event) {
@@ -55,7 +56,6 @@ class _MyAppState extends State<MyApp> {
 
   void startListening() {
     print('start listening');
-    _remoteInput = new RemoteInput();
     try {
       _subscription = _remoteInput.notificationStream.listen(onData);
       setState(() {
@@ -77,7 +77,8 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      theme: ThemeData.dark(),
+
+      theme: ThemeData.dark(useMaterial3: true),
       home: Scaffold(
         appBar: AppBar(
           title: Text('Plugin Running on: $_platformVersion'),
@@ -136,6 +137,7 @@ class ReplyDialog extends StatelessWidget {
     return CupertinoAlertDialog(
       title: Text("Reply"),
       content: CupertinoTextField(
+        style: TextStyle(color: Colors.white),
         controller: controller,
       ),
       actions: <Widget>[

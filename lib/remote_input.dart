@@ -19,13 +19,16 @@ class NotificationEvent {
   String packageName;
   String packageTitle;
   String packageMessage;
-  bool withRemoteInput = false;
+  bool withRemoteInput;
+  String? remoteInputSymbol;
 
   NotificationEvent({
     required this.id,
     required this.packageName,
     required this.packageTitle,
     required this.packageMessage,
+    this.withRemoteInput = false,
+    this.remoteInputSymbol,
   });
 
   factory NotificationEvent.fromMap(Map<dynamic, dynamic> map) {
@@ -34,12 +37,16 @@ class NotificationEvent {
     String title = map['packageTitle'];
     title = title.split('@')[0];
     String message = map['packageMessage'];
+    final remoteInputSymbol = map['remoteInputSymbol'];
+    bool withRemoteInput = remoteInputSymbol != null ? true : false;
 
     return NotificationEvent(
       id: id,
       packageName: name,
       packageTitle: title,
       packageMessage: message,
+      withRemoteInput: withRemoteInput,
+      remoteInputSymbol: remoteInputSymbol
     );
   }
 
@@ -49,6 +56,7 @@ class NotificationEvent {
     // map['2'] = packageName;
     map['title'] = packageTitle;
     map['message'] = packageMessage;
+    map['remote_input'] = withRemoteInput;
     return jsonEncode(map);
   }
 
@@ -62,12 +70,13 @@ class NotificationEvent {
     } else {
       map['message'] = packageMessage;
     }
+    map['reply'] = withRemoteInput;
     return jsonEncode(map);
   } // For Watch
 
   @override
   String toString() {
-    return "通知事件 Notification Event \n - ID: $id - Package Name: $packageName \n - Package Title: $packageTitle \n - Package Message: $packageMessage";
+    return "通知事件 Notification Event \n - ID: $id - Package Name: $packageName \n - Package Title: $packageTitle \n - Package Message: $packageMessage - Remote Input: $remoteInputSymbol";
   }
 }
 

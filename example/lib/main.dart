@@ -77,7 +77,6 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-
       theme: ThemeData.dark(useMaterial3: true),
       home: Scaffold(
         appBar: AppBar(
@@ -90,10 +89,10 @@ class _MyAppState extends State<MyApp> {
               itemBuilder: (BuildContext context, int idx) {
                 final entry = _log[idx];
                 return ListTile(
-                  leading: IconButton(
+                  leading: entry.withRemoteInput ? IconButton(
                     icon: Icon(Icons.reply),
                     onPressed: () => showReplyDialog(context, entry.id),
-                  ),
+                  ) : null,
                   title: Text(entry.packageName.toString().split('.').last),
                   subtitle: Text(entry.packageMessage.toString()),
                 );

@@ -58,13 +58,15 @@ class NotificationListener : NotificationListenerService() {
                 mNotificationObject!!.bundle = extrasBundle
 //                Log.i(TAG, "Notification is: $notification")
                 if (notification.actions != null) {
-                    Log.i(TAG, "成功抓取到action，取得回覆資格")
+                    Log.i(TAG, "成功抓取到action")
                     for (action in notification.actions) {
                         if (action.remoteInputs != null) { // make remoteInputs contained in the action
+                            Log.i(TAG, "action中有回覆功能")
                             val remoteInputs = action.remoteInputs
                             val remoteInputArrayList = ArrayList(listOf(*remoteInputs))
                             mNotificationObject!!.remoteInputs.addAll(remoteInputArrayList)
                             mNotificationObject!!.pendingIntent = action.actionIntent
+                            intent.putExtra(NOTIFICATION_REMOTE_INPUT, "$remoteInputArrayList")
                         }
                     }
                 }
@@ -115,6 +117,7 @@ class NotificationListener : NotificationListenerService() {
         const val NOTIFICATION_PACKAGE_TITLE = "notification_package_title"
         const val NOTIFICATION_PACKAGE_MESSAGE = "notification_package_message"
         const val NOTIFICATION_ID = "notification_id"
+        const val NOTIFICATION_REMOTE_INPUT = "remote_input"
         var mNotificationObject: NotificationWear? = null
         var notificationsMap = hashMapOf<String, NotificationWear>()
     }

@@ -1,6 +1,6 @@
 name: remote_input
-description: A new flutter plugin project.
-version: 0.0.1
+description: notification listener with remote input capability
+version: 0.0.2
 author:
 homepage:
 

@@ -15,7 +15,20 @@ class NotificationListener : NotificationListenerService() {
     private var mPreviousId: String? = null
 
     override fun onNotificationPosted(statusBarNotification: StatusBarNotification) {
-        if (statusBarNotification.tag != null) {
+        Log.i(TAG, "onNotificationPosted: ${statusBarNotification.packageName}")
+        if (statusBarNotification.packageName == "com.skaiwalk.skaiwalk") {
+            Log.i(TAG, "onNotificationPosted: Notification from this app, ignoring.")
+            return
+        }
+
+        // 過濾 MediaStyle 通知
+        val template = statusBarNotification.notification.extras.getString("android.template")
+        // statusBarNotification.packageName == "com.google.android.apps.youtube.music"
+        if (template == "android.app.Notification\$MediaStyle") {
+            Log.i(TAG, "onNotificationPosted: MediaStyle notification from YouTube Music, ignoring.")
+            return
+        }
+//        if (statusBarNotification.tag != null) {
             val secondsSinceUnixEpoch: Long = currentTimeMillis() / 1000
             val idString = secondsSinceUnixEpoch.toString()
             // Retrieve extra object from notification to extract payload.
@@ -58,10 +71,9 @@ class NotificationListener : NotificationListenerService() {
                 mNotificationObject!!.bundle = extrasBundle
 //                Log.i(TAG, "Notification is: $notification")
                 if (notification.actions != null) {
-                    Log.i(TAG, "成功抓取到action")
                     for (action in notification.actions) {
                         if (action.remoteInputs != null) { // make remoteInputs contained in the action
-                            Log.i(TAG, "action中有回覆功能")
+                            Log.i(TAG, "There is remote input action in notification")
                             val remoteInputs = action.remoteInputs
                             val remoteInputArrayList = ArrayList(listOf(*remoteInputs))
                             mNotificationObject!!.remoteInputs.addAll(remoteInputArrayList)
@@ -78,6 +90,20 @@ class NotificationListener : NotificationListenerService() {
                 }
 //        mNotificationObject = extractWearNotification(statusBarNotification)
 //        val intent = mNotificationObject?.let { createIntent(it) }
+            }
+//        }
+    }
+
+    override fun onNotificationRemoved(statusBarNotification: StatusBarNotification) {
+        if (statusBarNotification.tag != null) {
+            val idString = statusBarNotification.id.toString()
+            Log.i(TAG, "Notification with ID $idString was removed.")
+            mNotificationObject = notificationsMap.remove(idString)
+            if (mNotificationObject != null) {
+                Log.i(TAG, "Notification with ID $idString was removed.")
+//                val intent = createIntent(mNotificationObject!!)
+//                intent.putExtra(NOTIFICATION_ID, idString)
+//                sendBroadcast(intent)
             }
         }
     }

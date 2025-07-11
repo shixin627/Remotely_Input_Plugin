@@ -140,9 +140,8 @@ class RemoteInputPlugin: FlutterPlugin, MethodCallHandler, EventChannel.StreamHa
         localIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         val localBundle = notificationWear.bundle
 
-        for (remoteInput in remoteInputs) {
-//          getDetailsOfNotification(remoteInput)
-          val key = remoteInput?.resultKey
+        for (remoteIn in remoteInputs) { // Renamed remoteInput to remoteIn to avoid conflict
+          val key = remoteIn?.resultKey // Use remoteIn here
           println("remoteInput resultKey: $key")
           localBundle.putCharSequence(key, text)
         }
@@ -155,43 +154,4 @@ class RemoteInputPlugin: FlutterPlugin, MethodCallHandler, EventChannel.StreamHa
         return false
       }
   }
-
-//  private fun remoteInput(text: String): Boolean {
-//    if (NotificationListener.mNotificationObject!=null){
-//      val wear: NotificationWear = NotificationListener.mNotificationObject!!
-//      if (wear != null){
-//        val key = wear.remoteInputs[0].resultKey
-//        val remoteInputs = wear.remoteInputs
-//        var array = arrayOfNulls<RemoteInput>(remoteInputs.size)
-//        array = remoteInputs.toArray(array)
-//
-//        val localIntent = Intent("remoteInput")
-//        val localBundle = Bundle()
-//        localBundle.putCharSequence(key, text)
-//
-//        RemoteInput.addResultsToIntent(array, localIntent, localBundle)
-//        var pendingIntent = wear.pendingIntent
-//        pendingIntent.send(context, 0, localIntent)
-//        return true
-//      }
-//    } else {
-//      println("Object is null");
-//    }
-//    return false
-//  }
-
-  //Most interesting code here - end
-  private fun getDetailsOfNotification(remoteInput: RemoteInput) {
-    //Some more details of RemoteInput... no idea what for but maybe it will be useful at some point
-    val resultKey = remoteInput.resultKey
-    val label = remoteInput.label.toString()
-    val canFreeForm = remoteInput.allowFreeFormInput
-    if (remoteInput.choices != null && remoteInput.choices.isNotEmpty()) {
-      val possibleChoices = arrayOfNulls<String>(remoteInput.choices.size)
-      for (i in remoteInput.choices.indices) {
-        possibleChoices[i] = remoteInput.choices[i].toString()
-      }
-    }
-  }
 }
-

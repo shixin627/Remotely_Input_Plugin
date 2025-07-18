@@ -9,15 +9,20 @@ import com.example.remote_input.Models.NotificationWear
 import java.lang.System.currentTimeMillis
 import java.util.*
 
-
 class NotificationListener : NotificationListenerService() {
     private var mPreviousNotificationKey: String? = null
     private var mPreviousId: String? = null
+
 
     override fun onNotificationPosted(statusBarNotification: StatusBarNotification) {
         Log.i(TAG, "onNotificationPosted: ${statusBarNotification.packageName}")
         if (statusBarNotification.packageName == "com.skaiwalk.skaiwalk") {
             Log.i(TAG, "onNotificationPosted: Notification from this app, ignoring.")
+            return
+        }
+        // 過濾掉系統通知
+        if (statusBarNotification.packageName.startsWith("com.android") || statusBarNotification.packageName.startsWith("com.google.android")) {
+            Log.i(TAG, "onNotificationPosted: Android or Google system notification, ignoring.")
             return
         }
 

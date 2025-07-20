@@ -24,7 +24,7 @@ class NotificationListener : NotificationListenerService() {
         if (
             statusBarNotification.packageName == "android" ||
             statusBarNotification.packageName.startsWith("com.android") ||
-            statusBarNotification.packageName.startsWith("com.google.android")
+            statusBarNotification.packageName == "com.google.android.odad"
         ) {
             Log.i(TAG, "onNotificationPosted: Android or Google system notification, ignoring.")
             return

@@ -21,7 +21,11 @@ class NotificationListener : NotificationListenerService() {
             return
         }
         // 過濾掉系統通知
-        if (statusBarNotification.packageName.startsWith("com.android") || statusBarNotification.packageName.startsWith("com.google.android")) {
+        if (
+            statusBarNotification.packageName == "android" ||
+            statusBarNotification.packageName.startsWith("com.android") ||
+            statusBarNotification.packageName.startsWith("com.google.android")
+        ) {
             Log.i(TAG, "onNotificationPosted: Android or Google system notification, ignoring.")
             return
         }

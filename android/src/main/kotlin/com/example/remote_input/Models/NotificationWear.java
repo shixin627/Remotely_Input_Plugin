@@ -1,6 +1,7 @@
 package com.example.remote_input.Models;
 
 import android.app.PendingIntent;
+import android.app.Notification;
 import android.os.Bundle;
 
 import org.jetbrains.annotations.Nullable;
@@ -14,6 +15,7 @@ public class NotificationWear {
     public String packageName = "";
     public PendingIntent pendingIntent;
     public ArrayList<android.app.RemoteInput> remoteInputs = new ArrayList<>();
+    public ArrayList<Notification.Action> actions = new ArrayList<>();
     public Bundle bundle;
     public String tag;
 
@@ -25,6 +27,7 @@ public class NotificationWear {
                 ", packageName=" + packageName +
                 ", pendingIntent=" + pendingIntent +
                 ", remoteInputs=" + remoteInputs +
+                ", actions=" + actions +
                 ", bundle=" + bundle +
                 ", tag=" + tag +
                 '}';

@@ -14,6 +14,9 @@ class NotificationReceiver internal constructor(private val eventSink: EventSink
         val packageTitle = intent.getStringExtra(NotificationListener.NOTIFICATION_PACKAGE_TITLE)
         val packageMessage = intent.getStringExtra(NotificationListener.NOTIFICATION_PACKAGE_MESSAGE)
         val remoteInputSymbol = intent.getStringExtra(NotificationListener.NOTIFICATION_REMOTE_INPUT)
+        val actionTitles = intent.getStringArrayListExtra(NotificationListener.NOTIFICATION_ACTIONS_TITLES)
+        val actionsCount = intent.getIntExtra(NotificationListener.NOTIFICATION_ACTIONS_COUNT, 0)
+
         val map = HashMap<String, Any?>()
 
         map["id"] = id
@@ -21,6 +24,8 @@ class NotificationReceiver internal constructor(private val eventSink: EventSink
         map["packageTitle"] = packageTitle
         map["packageMessage"] = packageMessage
         map["remoteInputSymbol"] = remoteInputSymbol
+        map["actionTitles"] = actionTitles
+        map["actionsCount"] = actionsCount
 
         if (packageTitle!=null&& packageMessage!=null) {
             eventSink.success(map)

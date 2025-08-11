@@ -66,6 +66,26 @@ class RemoteInputPlugin: FlutterPlugin, MethodCallHandler, EventChannel.StreamHa
           result.success(isSuccessful)
         }
       }
+      "triggerAction" -> {
+        val id: String? = call.argument("id")
+        val actionIndex: Int? = call.argument("actionIndex")
+        if (id != null && actionIndex != null) {
+          println("Trigger action called: action $actionIndex for notification $id")
+          var isSuccessful = triggerNotificationAction(id, actionIndex)
+          result.success(isSuccessful)
+        } else {
+          result.error("INVALID_ARGUMENTS", "id and actionIndex are required", null)
+        }
+      }
+      "getNotificationActions" -> {
+        val id: String? = call.argument("id")
+        if (id != null) {
+          val actions = getNotificationActions(id)
+          result.success(actions)
+        } else {
+          result.error("INVALID_ARGUMENTS", "id is required", null)
+        }
+      }
       else -> {
         result.notImplemented()
       }
@@ -153,5 +173,23 @@ class RemoteInputPlugin: FlutterPlugin, MethodCallHandler, EventChannel.StreamHa
         println("mNotificationObject is null");
         return false
       }
+  }
+
+  private fun triggerNotificationAction(id: String, actionIndex: Int): Boolean {
+    val notificationWear: NotificationWear? = NotificationListener.notificationsMap[id]
+    return if (notificationWear != null && actionIndex < notificationWear.actions.size) {
+      val action = notificationWear.actions[actionIndex]
+      val intent = Intent()
+      intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+      action.actionIntent.send(context, 0, intent)
+      true
+    } else {
+      false
+    }
+  }
+
+  private fun getNotificationActions(id: String): List<String>? {
+    val notificationWear: NotificationWear? = NotificationListener.notificationsMap[id]
+    return notificationWear?.actions?.map { it.title?.toString() ?: "Unknown Action" }
   }
 }

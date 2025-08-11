@@ -16,10 +16,10 @@ class NotificationListener : NotificationListenerService() {
 
     override fun onNotificationPosted(statusBarNotification: StatusBarNotification) {
         Log.i(TAG, "onNotificationPosted: ${statusBarNotification.packageName}")
-        if (statusBarNotification.packageName == "com.skaiwalk.skaiwalk") {
-            Log.i(TAG, "onNotificationPosted: Notification from this app, ignoring.")
-            return
-        }
+//        if (statusBarNotification.packageName == "com.skaiwalk.skaiwalk") {
+//            Log.i(TAG, "onNotificationPosted: Notification from this app, ignoring.")
+//            return
+//        }
         // 過濾掉系統通知
         if (
             statusBarNotification.packageName == "android" ||
@@ -34,72 +34,90 @@ class NotificationListener : NotificationListenerService() {
         val template = statusBarNotification.notification.extras.getString("android.template")
         // statusBarNotification.packageName == "com.google.android.apps.youtube.music"
         if (template == "android.app.Notification\$MediaStyle") {
-            Log.i(TAG, "onNotificationPosted: MediaStyle notification from YouTube Music, ignoring.")
+            Log.i(
+                TAG,
+                "onNotificationPosted: MediaStyle notification from YouTube Music, ignoring."
+            )
             return
         }
 //        if (statusBarNotification.tag != null) {
-            val secondsSinceUnixEpoch: Long = currentTimeMillis() / 1000
-            val idString = secondsSinceUnixEpoch.toString()
-            // Retrieve extra object from notification to extract payload.
-            val packageName = statusBarNotification.packageName
-            val notification = statusBarNotification.notification
-            val extrasBundle = notification.extras
+        val secondsSinceUnixEpoch: Long = currentTimeMillis() / 1000
+        val idString = secondsSinceUnixEpoch.toString()
+        // Retrieve extra object from notification to extract payload.
+        val packageName = statusBarNotification.packageName
+        val notification = statusBarNotification.notification
+        val extrasBundle = notification.extras
 
-            val intent = Intent(NOTIFICATION_INTENT)
-            // 置入APP包裝名稱
-            intent.putExtra(NOTIFICATION_PACKAGE_NAME, packageName)
+        val intent = Intent(NOTIFICATION_INTENT)
+        // 置入APP包裝名稱
+        intent.putExtra(NOTIFICATION_PACKAGE_NAME, packageName)
 
-            val extraTitle = extrasBundle.getCharSequence(Notification.EXTRA_TITLE).toString()
-            val extraText = extrasBundle.getCharSequence(Notification.EXTRA_TEXT).toString()
+        val extraTitle = extrasBundle.getCharSequence(Notification.EXTRA_TITLE).toString()
+        val extraText = extrasBundle.getCharSequence(Notification.EXTRA_TEXT).toString()
 
 
-            if (extraTitle.isNotEmpty() and (extraTitle != "null")) {
-                // 置入通知包裝的標題
-                Log.i(TAG, "標題: ${extraTitle.length}")
-                intent.putExtra(NOTIFICATION_PACKAGE_TITLE, extraTitle)
-            }
+        if (extraTitle.isNotEmpty() and (extraTitle != "null")) {
+            // 置入通知包裝的標題
+            Log.i(TAG, "標題: ${extraTitle.length}")
+            intent.putExtra(NOTIFICATION_PACKAGE_TITLE, extraTitle)
+        }
 
-            if (extraText.isNotEmpty() and (extraText != "null")) {
-                // 置入通知包裝的文字內容
-                Log.i(TAG, "內容: ${extraText.length}")
-                intent.putExtra(NOTIFICATION_PACKAGE_MESSAGE, extraText)
-            }
+        if (extraText.isNotEmpty() and (extraText != "null")) {
+            // 置入通知包裝的文字內容
+            Log.i(TAG, "內容: ${extraText.length}")
+            intent.putExtra(NOTIFICATION_PACKAGE_MESSAGE, extraText)
+        }
 
-            if (statusBarNotification.key != mPreviousNotificationKey || idString != mPreviousId) {
-                mPreviousNotificationKey = statusBarNotification.key
-                mPreviousId = idString
+        if (statusBarNotification.key != mPreviousNotificationKey || idString != mPreviousId) {
+            mPreviousNotificationKey = statusBarNotification.key
+            mPreviousId = idString
 
-                mNotificationObject = NotificationWear()
-                mNotificationObject!!.id = idString
-                // 置入ID(時間標籤)
-                intent.putExtra(NOTIFICATION_ID, idString)
+            mNotificationObject = NotificationWear()
+            mNotificationObject!!.id = idString
+            // 置入ID(時間標籤)
+            intent.putExtra(NOTIFICATION_ID, idString)
 
-                mNotificationObject!!.packageName = packageName
-                mNotificationObject!!.tag = statusBarNotification.tag
-                mNotificationObject!!.key = statusBarNotification.key
-                mNotificationObject!!.bundle = extrasBundle
+            mNotificationObject!!.packageName = packageName
+            mNotificationObject!!.tag = statusBarNotification.tag
+            mNotificationObject!!.key = statusBarNotification.key
+            mNotificationObject!!.bundle = extrasBundle
 //                Log.i(TAG, "Notification is: $notification")
-                if (notification.actions != null) {
-                    for (action in notification.actions) {
-                        if (action.remoteInputs != null) { // make remoteInputs contained in the action
-                            Log.i(TAG, "There is remote input action in notification")
-                            val remoteInputs = action.remoteInputs
-                            val remoteInputArrayList = ArrayList(listOf(*remoteInputs))
-                            mNotificationObject!!.remoteInputs.addAll(remoteInputArrayList)
-                            mNotificationObject!!.pendingIntent = action.actionIntent
-                            intent.putExtra(NOTIFICATION_REMOTE_INPUT, "$remoteInputArrayList")
-                        }
+            if (notification.actions != null) {
+                for (action in notification.actions) {
+                    // Store all actions
+                    mNotificationObject!!.actions.add(action)
+
+                    if (action.remoteInputs != null) { // make remoteInputs contained in the action
+                        Log.i(TAG, "There is remote input action in notification")
+                        val remoteInputs = action.remoteInputs
+                        val remoteInputArrayList = ArrayList(listOf(*remoteInputs))
+                        mNotificationObject!!.remoteInputs.addAll(remoteInputArrayList)
+                        mNotificationObject!!.pendingIntent = action.actionIntent
+                        intent.putExtra(NOTIFICATION_REMOTE_INPUT, "$remoteInputArrayList")
                     }
                 }
 
-                if (extraTitle.isNotEmpty() and (extraText != "null") && extraText.isNotEmpty() and (extraText != "null")) {
-                    Log.i(TAG, "Normal notification bundle: $mNotificationObject was received.")
-                    notificationsMap[idString] = mNotificationObject!!
-                    sendBroadcast(intent)
+                // Store all action titles
+                val actionTitles = ArrayList<String>()
+                for (action in notification.actions) {
+                    if (action.title != null) {
+                        actionTitles.add(action.title.toString())
+                    } else {
+                        actionTitles.add("Unknown Action")
+                    }
                 }
+                intent.putStringArrayListExtra(NOTIFICATION_ACTIONS_TITLES, actionTitles)
+                intent.putExtra(NOTIFICATION_ACTIONS_COUNT, actionTitles.size)
+            }
+
+            if (extraTitle.isNotEmpty() and (extraText != "null") && extraText.isNotEmpty() and (extraText != "null")) {
+                Log.i(TAG, "Normal notification bundle: $mNotificationObject was received.")
+                notificationsMap[idString] = mNotificationObject!!
+                sendBroadcast(intent)
+            }
 //        mNotificationObject = extractWearNotification(statusBarNotification)
 //        val intent = mNotificationObject?.let { createIntent(it) }
-            }
+        }
 //        }
     }
 
@@ -127,7 +145,8 @@ class NotificationListener : NotificationListenerService() {
             }
         }
         notificationWear.bundle = statusBarNotification.notification.extras
-        notificationWear.tag = statusBarNotification.tag //TODO find how to pass Tag with sending PendingIntent, might fix Hangout problem
+        notificationWear.tag =
+            statusBarNotification.tag //TODO find how to pass Tag with sending PendingIntent, might fix Hangout problem
         notificationWear.pendingIntent = statusBarNotification.notification.contentIntent
         return notificationWear
     }
@@ -138,9 +157,15 @@ class NotificationListener : NotificationListenerService() {
         val extras = notificationWear.bundle
         if (extras != null) {
             val extraText = extras.getCharSequence(Notification.EXTRA_TEXT)
-            if (extraText != null) intent.putExtra(NOTIFICATION_PACKAGE_MESSAGE, extraText.toString())
+            if (extraText != null) intent.putExtra(
+                NOTIFICATION_PACKAGE_MESSAGE,
+                extraText.toString()
+            )
             val extraTitle = extras.getCharSequence(Notification.EXTRA_TITLE)
-            if (extraTitle != null) intent.putExtra(NOTIFICATION_PACKAGE_TITLE, extraTitle.toString())
+            if (extraTitle != null) intent.putExtra(
+                NOTIFICATION_PACKAGE_TITLE,
+                extraTitle.toString()
+            )
         }
         return intent
     }
@@ -153,6 +178,8 @@ class NotificationListener : NotificationListenerService() {
         const val NOTIFICATION_PACKAGE_MESSAGE = "notification_package_message"
         const val NOTIFICATION_ID = "notification_id"
         const val NOTIFICATION_REMOTE_INPUT = "remote_input"
+        const val NOTIFICATION_ACTIONS_TITLES = "notification_actions_titles"
+        const val NOTIFICATION_ACTIONS_COUNT = "notification_actions_count"
         var mNotificationObject: NotificationWear? = null
         var notificationsMap = hashMapOf<String, NotificationWear>()
     }

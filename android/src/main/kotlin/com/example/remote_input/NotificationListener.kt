@@ -16,30 +16,32 @@ class NotificationListener : NotificationListenerService() {
 
     override fun onNotificationPosted(statusBarNotification: StatusBarNotification) {
         Log.i(TAG, "onNotificationPosted: ${statusBarNotification.packageName}")
-//        if (statusBarNotification.packageName == "com.skaiwalk.skaiwalk") {
-//            Log.i(TAG, "onNotificationPosted: Notification from this app, ignoring.")
-//            return
-//        }
         // 過濾掉系統通知
         if (
             statusBarNotification.packageName == "android" ||
             statusBarNotification.packageName.startsWith("com.android") ||
             statusBarNotification.packageName == "com.google.android.odad"
         ) {
-            Log.i(TAG, "onNotificationPosted: Android or Google system notification, ignoring.")
+            Log.d(TAG, "onNotificationPosted: Android or Google system notification, ignoring.")
             return
         }
 
         // 過濾 MediaStyle 通知
-        val template = statusBarNotification.notification.extras.getString("android.template")
-        // statusBarNotification.packageName == "com.google.android.apps.youtube.music"
+        val template = statusBarNotification.notification.extras.getString("android.template")\
         if (template == "android.app.Notification\$MediaStyle") {
-            Log.i(
+            Log.d(
                 TAG,
-                "onNotificationPosted: MediaStyle notification from YouTube Music, ignoring."
+                "onNotificationPosted: MediaStyle notification, ignoring."
             )
             return
         }
+
+        // 過濾 Google Map 通知
+        if (statusBarNotification.packageName == "com.google.android.apps.maps") {
+            Log.d(TAG, "onNotificationPosted: Google Map notification, ignoring.")
+            return
+        }
+
 //        if (statusBarNotification.tag != null) {
         val secondsSinceUnixEpoch: Long = currentTimeMillis() / 1000
         val idString = secondsSinceUnixEpoch.toString()

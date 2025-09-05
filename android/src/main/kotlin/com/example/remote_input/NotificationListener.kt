@@ -27,7 +27,7 @@ class NotificationListener : NotificationListenerService() {
         }
 
         // 過濾 MediaStyle 通知
-        val template = statusBarNotification.notification.extras.getString("android.template")\
+        val template = statusBarNotification.notification.extras.getString("android.template")
         if (template == "android.app.Notification\$MediaStyle") {
             Log.d(
                 TAG,

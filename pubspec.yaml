@@ -1,8 +1,8 @@
 name: remote_input
-description: notification listener with remote input capability
+description: A Flutter plugin for Android notification listening with remote input capabilities. Listen to notifications, reply to messages, and trigger notification actions.
 version: 0.0.2
-author:
-homepage:
+author: Remote Input Plugin Contributors
+homepage: https://github.com/shixin627/Remotely_Input_Plugin
 
 environment:
   sdk: ">=2.12.0 <3.0.0"

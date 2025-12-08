@@ -51,6 +51,8 @@ class NotificationEvent {
   bool withRemoteInput;
   String? remoteInputSymbol;
   List<NotificationAction> actions;
+  String? category; // Notification category (call, msg, email, social, etc.)
+  DateTime receivedAt = DateTime.now();
 
   NotificationEvent({
     required this.id,
@@ -60,6 +62,7 @@ class NotificationEvent {
     this.withRemoteInput = false,
     this.remoteInputSymbol,
     this.actions = const [],
+    this.category,
   });
 
   factory NotificationEvent.fromMap(Map<dynamic, dynamic> map) {
@@ -70,6 +73,7 @@ class NotificationEvent {
     String message = map['packageMessage'];
     final remoteInputSymbol = map['remoteInputSymbol'];
     bool withRemoteInput = remoteInputSymbol != null ? true : false;
+    final category = map['category']; // Extract notification category
     List<NotificationAction> actions = [];
     if (map['actions'] != null) {
       for (var i = 0; i < map['actions'].length; i++) {
@@ -85,6 +89,7 @@ class NotificationEvent {
       withRemoteInput: withRemoteInput,
       remoteInputSymbol: remoteInputSymbol,
       actions: actions,
+      category: category,
     );
   }
 
@@ -97,6 +102,7 @@ class NotificationEvent {
       'withRemoteInput': withRemoteInput,
       'remoteInputSymbol': remoteInputSymbol,
       'actions': actions.map((a) => a.toMap()).toList(),
+      'category': category,
     };
   }
 
@@ -121,12 +127,13 @@ class NotificationEvent {
       map['message'] = packageMessage;
     }
     map['reply'] = withRemoteInput;
+    map['calling'] = category == "call" ? true : false;
     return jsonEncode(map);
   } // For Watch
 
   @override
   String toString() {
-    return "通知事件 Notification Event \n - ID: $id - Package Name: $packageName \n - Package Title: $packageTitle \n - Package Message: $packageMessage - Remote Input: $remoteInputSymbol";
+    return "通知事件 Notification Event \n - ID: $id - Package Name: $packageName \n - Package Title: $packageTitle \n - Package Message: $packageMessage(category: $category) \n - Remote Input: $remoteInputSymbol";
   }
 }
 

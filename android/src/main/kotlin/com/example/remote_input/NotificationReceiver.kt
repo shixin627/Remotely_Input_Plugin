@@ -16,6 +16,7 @@ class NotificationReceiver internal constructor(private val eventSink: EventSink
         val remoteInputSymbol = intent.getStringExtra(NotificationListener.NOTIFICATION_REMOTE_INPUT)
         val actionTitles = intent.getStringArrayListExtra(NotificationListener.NOTIFICATION_ACTIONS_TITLES)
         val actionsCount = intent.getIntExtra(NotificationListener.NOTIFICATION_ACTIONS_COUNT, 0)
+        val category = intent.getStringExtra(NotificationListener.NOTIFICATION_CATEGORY)
 
         val map = HashMap<String, Any?>()
 
@@ -26,6 +27,7 @@ class NotificationReceiver internal constructor(private val eventSink: EventSink
         map["remoteInputSymbol"] = remoteInputSymbol
         map["actionTitles"] = actionTitles
         map["actionsCount"] = actionsCount
+        map["category"] = category
 
         if (packageTitle!=null&& packageMessage!=null) {
             eventSink.success(map)

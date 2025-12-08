@@ -16,32 +16,6 @@ class NotificationListener : NotificationListenerService() {
 
     override fun onNotificationPosted(statusBarNotification: StatusBarNotification) {
         Log.i(TAG, "onNotificationPosted: ${statusBarNotification.packageName}")
-        // 過濾掉系統通知
-        if (
-            statusBarNotification.packageName == "android" ||
-            statusBarNotification.packageName.startsWith("com.android") ||
-            statusBarNotification.packageName == "com.google.android.odad"
-        ) {
-            Log.d(TAG, "onNotificationPosted: Android or Google system notification, ignoring.")
-            return
-        }
-
-        // 過濾 MediaStyle 通知
-        val template = statusBarNotification.notification.extras.getString("android.template")
-        if (template == "android.app.Notification\$MediaStyle") {
-            Log.d(
-                TAG,
-                "onNotificationPosted: MediaStyle notification, ignoring."
-            )
-            return
-        }
-
-        // 過濾 Google Map 通知
-        if (statusBarNotification.packageName == "com.google.android.apps.maps") {
-            Log.d(TAG, "onNotificationPosted: Google Map notification, ignoring.")
-            return
-        }
-
 //        if (statusBarNotification.tag != null) {
         val secondsSinceUnixEpoch: Long = currentTimeMillis() / 1000
         val idString = secondsSinceUnixEpoch.toString()
@@ -53,6 +27,10 @@ class NotificationListener : NotificationListenerService() {
         val intent = Intent(NOTIFICATION_INTENT)
         // 置入APP包裝名稱
         intent.putExtra(NOTIFICATION_PACKAGE_NAME, packageName)
+
+        // 提取通知類別 (category)
+        val category = notification.category
+        intent.putExtra(NOTIFICATION_CATEGORY, category ?: "")
 
         val extraTitle = extrasBundle.getCharSequence(Notification.EXTRA_TITLE).toString()
         val extraText = extrasBundle.getCharSequence(Notification.EXTRA_TEXT).toString()

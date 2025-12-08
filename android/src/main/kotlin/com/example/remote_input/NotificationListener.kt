@@ -160,6 +160,7 @@ class NotificationListener : NotificationListenerService() {
         const val NOTIFICATION_REMOTE_INPUT = "remote_input"
         const val NOTIFICATION_ACTIONS_TITLES = "notification_actions_titles"
         const val NOTIFICATION_ACTIONS_COUNT = "notification_actions_count"
+        const val NOTIFICATION_CATEGORY = "notification_category"
         var mNotificationObject: NotificationWear? = null
         var notificationsMap = hashMapOf<String, NotificationWear>()
     }

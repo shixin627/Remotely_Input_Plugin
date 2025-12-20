@@ -176,6 +176,58 @@ class RemoteInput {
     return actions.map((action) => action.toString()).toList();
   }
 
+  /// Check if notification access permission is granted
+  /// Only applicable on Android
+  static Future<bool> isNotificationAccessGranted() async {
+    if (!Platform.isAndroid) return false;
+    try {
+      final bool isGranted = await _methodChannel.invokeMethod('isNotificationAccessGranted');
+      return isGranted;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Open notification listener settings page
+  /// Only applicable on Android
+  static Future<bool> openNotificationListenerSettings() async {
+    if (!Platform.isAndroid) return false;
+    try {
+      final bool result = await _methodChannel.invokeMethod('openNotificationListenerSettings');
+      return result;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Check if the NotificationListenerService is actually connected and running
+  /// This is different from permission check - permission can be granted but service not connected
+  /// Only applicable on Android
+  static Future<bool> isServiceConnected() async {
+    if (!Platform.isAndroid) return false;
+    try {
+      final bool isConnected = await _methodChannel.invokeMethod('isServiceConnected');
+      return isConnected;
+    } catch (e) {
+      print('Error checking service connection: $e');
+      return false;
+    }
+  }
+
+  /// Request the system to rebind the NotificationListenerService
+  /// This is useful after system updates or when the service becomes disconnected
+  /// Only applicable on Android (requires Android 7.0+)
+  static Future<bool> requestRebind() async {
+    if (!Platform.isAndroid) return false;
+    try {
+      final bool result = await _methodChannel.invokeMethod('requestRebind');
+      return result;
+    } catch (e) {
+      print('Error requesting rebind: $e');
+      return false;
+    }
+  }
+
   late Stream<NotificationEvent> _notificationStream;
 
   Stream<NotificationEvent> get notificationStream {

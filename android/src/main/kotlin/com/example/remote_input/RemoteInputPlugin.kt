@@ -8,6 +8,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.os.Build
 import android.provider.Settings
+import android.service.notification.NotificationListenerService
 import android.text.TextUtils
 import androidx.annotation.NonNull
 import com.example.remote_input.Models.NotificationWear
@@ -86,6 +87,20 @@ class RemoteInputPlugin: FlutterPlugin, MethodCallHandler, EventChannel.StreamHa
           result.error("INVALID_ARGUMENTS", "id is required", null)
         }
       }
+      "isNotificationAccessGranted" -> {
+        result.success(permissionGiven())
+      }
+      "openNotificationListenerSettings" -> {
+        openNotificationListenerSettings()
+        result.success(true)
+      }
+      "isServiceConnected" -> {
+        result.success(isServiceConnected())
+      }
+      "requestRebind" -> {
+        requestRebind()
+        result.success(true)
+      }
       else -> {
         result.notImplemented()
       }
@@ -115,16 +130,22 @@ class RemoteInputPlugin: FlutterPlugin, MethodCallHandler, EventChannel.StreamHa
     val packageName = context!!.packageName
     val flat: String = Settings.Secure.getString(context!!.contentResolver,
             ENABLED_NOTIFICATION_LISTENERS)
+    android.util.Log.d("RemoteInputPlugin", "🔍 Checking permission for package: $packageName")
+    android.util.Log.d("RemoteInputPlugin", "📋 Enabled listeners: $flat")
+    
     if (!TextUtils.isEmpty(flat)) {
       val names = flat.split(":").toTypedArray()
       for (name in names) {
         val componentName = ComponentName.unflattenFromString(name)
         val nameMatch = TextUtils.equals(packageName, componentName?.packageName)
+        android.util.Log.d("RemoteInputPlugin", "🔎 Checking component: $name, match: $nameMatch")
         if (nameMatch) {
+          android.util.Log.i("RemoteInputPlugin", "✅ Permission granted but service connection status unknown")
           return true
         }
       }
     }
+    android.util.Log.w("RemoteInputPlugin", "❌ Permission NOT granted")
     return false
   }
 
@@ -132,6 +153,52 @@ class RemoteInputPlugin: FlutterPlugin, MethodCallHandler, EventChannel.StreamHa
     if (!permissionGiven()) {
       val intent = Intent(ACTION_NOTIFICATION_LISTENER_SETTINGS)
       activity.startActivity(intent)
+    }
+  }
+
+  private fun openNotificationListenerSettings() {
+    val intent = Intent(ACTION_NOTIFICATION_LISTENER_SETTINGS)
+    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    context?.startActivity(intent)
+  }
+
+  /**
+   * Check if the NotificationListenerService is actually connected
+   * Returns true only if both permission is granted AND service is connected
+   */
+  private fun isServiceConnected(): Boolean {
+    if (!permissionGiven()) {
+      android.util.Log.w("RemoteInputPlugin", "❌ Permission not granted, service cannot be connected")
+      return false
+    }
+
+    val connected = NotificationListener.isConnected
+    android.util.Log.i("RemoteInputPlugin", "🔌 Service connection status: $connected")
+    return connected
+  }
+
+  /**
+   * Request the system to rebind the NotificationListenerService
+   * This is necessary after system updates or when service becomes disconnected
+   */
+  private fun requestRebind() {
+    android.util.Log.i("RemoteInputPlugin", "🔄 Requesting NotificationListener service rebind...")
+
+    try {
+      // Method 1: Request rebind via system API (Android 7.0+)
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+        val componentName = ComponentName(context!!, NotificationListener::class.java)
+        NotificationListenerService.requestRebind(componentName)
+        android.util.Log.i("RemoteInputPlugin", "✓ Rebind request sent via API")
+      } else {
+        // Method 2: For older Android versions, we need to toggle the permission
+        android.util.Log.w("RemoteInputPlugin", "⚠️ Android < 7.0 detected, user needs to manually toggle permission")
+        openNotificationListenerSettings()
+      }
+    } catch (e: Exception) {
+      android.util.Log.e("RemoteInputPlugin", "❌ Failed to request rebind: ${e.message}")
+      // Fallback: Open settings for user to manually toggle
+      openNotificationListenerSettings()
     }
   }
 

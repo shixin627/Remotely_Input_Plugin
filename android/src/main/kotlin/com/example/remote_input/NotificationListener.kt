@@ -13,6 +13,18 @@ class NotificationListener : NotificationListenerService() {
     private var mPreviousNotificationKey: String? = null
     private var mPreviousId: String? = null
 
+    override fun onListenerConnected() {
+        super.onListenerConnected()
+        isConnected = true
+        Log.i(TAG, "🟢 NotificationListener SERVICE CONNECTED")
+    }
+
+    override fun onListenerDisconnected() {
+        super.onListenerDisconnected()
+        isConnected = false
+        Log.w(TAG, "🔴 NotificationListener SERVICE DISCONNECTED")
+        // Note: Android may call requestRebind() here if app is in foreground
+    }
 
     override fun onNotificationPosted(statusBarNotification: StatusBarNotification) {
         Log.i(TAG, "onNotificationPosted: ${statusBarNotification.packageName}")
@@ -163,5 +175,9 @@ class NotificationListener : NotificationListenerService() {
         const val NOTIFICATION_CATEGORY = "notification_category"
         var mNotificationObject: NotificationWear? = null
         var notificationsMap = hashMapOf<String, NotificationWear>()
+
+        // Track service connection status
+        @Volatile
+        var isConnected: Boolean = false
     }
 }

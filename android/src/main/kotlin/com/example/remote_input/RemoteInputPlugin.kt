@@ -203,14 +203,14 @@ class RemoteInputPlugin: FlutterPlugin, MethodCallHandler, EventChannel.StreamHa
   }
 
   override fun onAttachedToActivity(binding: ActivityPluginBinding) {
-    handleNotificationPermissions(binding.activity)
+    // handleNotificationPermissions(binding.activity)
   }
 
   override fun onDetachedFromActivity() {
   }
 
   override fun onReattachedToActivityForConfigChanges(binding: ActivityPluginBinding) {
-    handleNotificationPermissions(binding.activity)
+    // handleNotificationPermissions(binding.activity)
   }
 
   override fun onDetachedFromActivityForConfigChanges() {

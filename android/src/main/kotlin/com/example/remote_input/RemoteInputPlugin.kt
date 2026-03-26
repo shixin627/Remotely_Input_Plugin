@@ -2,6 +2,7 @@ package com.example.remote_input
 
 import android.app.Activity
 import android.app.RemoteInput
+import android.content.BroadcastReceiver
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
@@ -23,34 +24,87 @@ import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
 
 /** RemoteInputPlugin */
-class RemoteInputPlugin: FlutterPlugin, MethodCallHandler, EventChannel.StreamHandler, ActivityAware {
+class RemoteInputPlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
   private lateinit var eventChannel: EventChannel
+  private lateinit var removedEventChannel: EventChannel
   private lateinit var methodChannel : MethodChannel
   companion object {
     const val ENABLED_NOTIFICATION_LISTENERS = "enabled_notification_listeners"
     const val ACTION_NOTIFICATION_LISTENER_SETTINGS = "android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS"
     const val EVENT_CHANNEL_NAME = "flutter.io/remote_input/eventChannel"
+    const val REMOVED_EVENT_CHANNEL_NAME = "flutter.io/remote_input/removedEventChannel"
     const val METHOD_CHANNEL_NAME = "flutter.io/remote_input/methodChannel"
   }
 
   private var eventSink: EventSink? = null
+  private var removedEventSink: EventSink? = null
   private var context: Context? = null
+  private var notificationReceiver: BroadcastReceiver? = null
+  private var removedReceiver: BroadcastReceiver? = null
 
   override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
+    context = flutterPluginBinding.applicationContext
+
     //method channel
     methodChannel = MethodChannel(flutterPluginBinding.binaryMessenger, METHOD_CHANNEL_NAME)
     methodChannel.setMethodCallHandler(this)
-    //event channel
+
+    //event channel - notifications posted
     eventChannel = EventChannel(flutterPluginBinding.binaryMessenger, EVENT_CHANNEL_NAME)
-    eventChannel.setStreamHandler(this)
-    context = flutterPluginBinding.applicationContext;
+    eventChannel.setStreamHandler(object : EventChannel.StreamHandler {
+      override fun onListen(arguments: Any?, events: EventSink?) {
+        eventSink = events
+        notificationReceiver = eventSink?.let { NotificationReceiver(it) }
+        val intentFilter = IntentFilter()
+        intentFilter.addAction(NotificationListener.NOTIFICATION_INTENT)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+          context!!.registerReceiver(notificationReceiver, intentFilter, Context.RECEIVER_EXPORTED)
+        }
+        val listenerIntent = Intent(context, NotificationListener::class.java)
+        context!!.startService(listenerIntent)
+      }
+      override fun onCancel(arguments: Any?) {
+        notificationReceiver?.let { context?.unregisterReceiver(it) }
+        notificationReceiver = null
+        eventSink = null
+      }
+    })
+
+    //event channel - notifications removed
+    removedEventChannel = EventChannel(flutterPluginBinding.binaryMessenger, REMOVED_EVENT_CHANNEL_NAME)
+    removedEventChannel.setStreamHandler(object : EventChannel.StreamHandler {
+      override fun onListen(arguments: Any?, events: EventSink?) {
+        removedEventSink = events
+        removedReceiver = object : BroadcastReceiver() {
+          override fun onReceive(ctx: Context, intent: Intent) {
+            val id = intent.getStringExtra(NotificationListener.NOTIFICATION_ID)
+            val packageName = intent.getStringExtra(NotificationListener.NOTIFICATION_PACKAGE_NAME)
+            val map = HashMap<String, Any?>()
+            map["id"] = id
+            map["packageName"] = packageName
+            events?.success(map)
+          }
+        }
+        val intentFilter = IntentFilter()
+        intentFilter.addAction(NotificationListener.NOTIFICATION_REMOVED_INTENT)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+          context!!.registerReceiver(removedReceiver, intentFilter, Context.RECEIVER_EXPORTED)
+        }
+      }
+      override fun onCancel(arguments: Any?) {
+        removedReceiver?.let { context?.unregisterReceiver(it) }
+        removedReceiver = null
+        removedEventSink = null
+      }
+    })
   }
 
   override fun onDetachedFromEngine(@NonNull binding: FlutterPlugin.FlutterPluginBinding) {
-    // method channel
     methodChannel.setMethodCallHandler(null)
-    // event channel
     eventChannel.setStreamHandler(null)
+    removedEventChannel.setStreamHandler(null)
+    notificationReceiver?.let { context?.unregisterReceiver(it) }
+    removedReceiver?.let { context?.unregisterReceiver(it) }
   }
 
   override fun onMethodCall(@NonNull call: MethodCall, @NonNull result: Result) {
@@ -101,29 +155,49 @@ class RemoteInputPlugin: FlutterPlugin, MethodCallHandler, EventChannel.StreamHa
         requestRebind()
         result.success(true)
       }
+      "cancelNotification" -> {
+        val id: String? = call.argument("id")
+        if (id != null) {
+          val success = cancelNotificationById(id)
+          result.success(success)
+        } else {
+          result.error("INVALID_ARGUMENTS", "id is required", null)
+        }
+      }
+      "getActiveNotifications" -> {
+        val notifications = NotificationListener.getActiveNotificationsSnapshot()
+        result.success(notifications)
+      }
       else -> {
         result.notImplemented()
       }
     }
   }
 
-  override fun onListen(arguments: Any?, events: EventSink?) {
-    println("Start Listening RemoteInputPlugin")
-    eventSink = events
-
-    val receiver = eventSink?.let { NotificationReceiver(it) }
-    val intentFilter = IntentFilter()
-    intentFilter.addAction(NotificationListener.NOTIFICATION_INTENT)
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-      context!!.registerReceiver(receiver, intentFilter, Context.RECEIVER_EXPORTED)
+  /**
+   * Cancel a notification on the phone by our custom ID.
+   * Looks up the StatusBarNotification key and calls cancelNotification on the
+   * NotificationListenerService instance.
+   */
+  private fun cancelNotificationById(customId: String): Boolean {
+    val sbnKey = NotificationListener.idToSbnKeyMap[customId]
+    if (sbnKey == null) {
+      android.util.Log.w("RemoteInputPlugin", "No sbnKey found for customId=$customId")
+      return false
     }
-
-    /* Start the notification service once permission has been given. */
-    val listenerIntent = Intent(context, NotificationListener::class.java)
-    context!!.startService(listenerIntent)
-  }
-
-  override fun onCancel(arguments: Any?) {
+    val listener = NotificationListener.instance
+    if (listener == null) {
+      android.util.Log.w("RemoteInputPlugin", "NotificationListener not connected")
+      return false
+    }
+    return try {
+      listener.cancelNotification(sbnKey)
+      android.util.Log.i("RemoteInputPlugin", "Cancelled notification: sbnKey=$sbnKey")
+      true
+    } catch (e: Exception) {
+      android.util.Log.e("RemoteInputPlugin", "Failed to cancel notification: ${e.message}")
+      false
+    }
   }
 
   private fun permissionGiven(): Boolean {

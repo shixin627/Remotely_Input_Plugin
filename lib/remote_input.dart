@@ -142,11 +142,33 @@ NotificationEvent _notificationEvent(dynamic data) {
   return new NotificationEvent.fromMap(data);
 }
 
+/// Event fired when a notification is dismissed/removed from the phone.
+class NotificationRemovedEvent {
+  final String id;
+  final String packageName;
+
+  NotificationRemovedEvent({required this.id, required this.packageName});
+
+  factory NotificationRemovedEvent.fromMap(Map<dynamic, dynamic> map) {
+    return NotificationRemovedEvent(
+      id: map['id'] ?? '',
+      packageName: map['packageName'] ?? '',
+    );
+  }
+
+  Map<String, dynamic> toMap() => {'id': id, 'packageName': packageName};
+
+  @override
+  String toString() => 'NotificationRemovedEvent(id: $id, packageName: $packageName)';
+}
+
 class RemoteInput {
   static const MethodChannel _methodChannel =
       const MethodChannel('flutter.io/remote_input/methodChannel');
   static const EventChannel _eventChannel =
       const EventChannel('flutter.io/remote_input/eventChannel');
+  static const EventChannel _removedEventChannel =
+      const EventChannel('flutter.io/remote_input/removedEventChannel');
 
   static Future<String> get platformVersion async {
     final String version =
@@ -228,7 +250,40 @@ class RemoteInput {
     }
   }
 
+  /// Get all currently active notifications in the status bar.
+  /// Returns a list of NotificationEvent objects representing what's
+  /// currently shown in the notification shade.
+  static Future<List<NotificationEvent>> getActiveNotifications() async {
+    if (!Platform.isAndroid) return [];
+    try {
+      final List<dynamic> result =
+          await _methodChannel.invokeMethod('getActiveNotifications');
+      return result
+          .map((item) => NotificationEvent.fromMap(item as Map<dynamic, dynamic>))
+          .toList();
+    } catch (e) {
+      print('Error getting active notifications: $e');
+      return [];
+    }
+  }
+
+  /// Cancel/dismiss a notification on the phone by its custom ID.
+  /// This allows the watch to dismiss a notification and have it removed from
+  /// the phone's notification shade as well.
+  static Future<bool> cancelNotification(String id) async {
+    if (!Platform.isAndroid) return false;
+    try {
+      final bool result =
+          await _methodChannel.invokeMethod('cancelNotification', {"id": id});
+      return result;
+    } catch (e) {
+      print('Error cancelling notification: $e');
+      return false;
+    }
+  }
+
   late Stream<NotificationEvent> _notificationStream;
+  late Stream<NotificationRemovedEvent> _notificationRemovedStream;
 
   Stream<NotificationEvent> get notificationStream {
     if (Platform.isAndroid) {
@@ -236,6 +291,19 @@ class RemoteInput {
           .receiveBroadcastStream()
           .map((event) => _notificationEvent(event));
       return _notificationStream;
+    }
+    throw NotificationException(
+        'Notification API exclusively available on Android!');
+  }
+
+  /// Stream of notification removal events.
+  /// Fires when the user (or system) dismisses a notification on the phone.
+  Stream<NotificationRemovedEvent> get notificationRemovedStream {
+    if (Platform.isAndroid) {
+      _notificationRemovedStream = _removedEventChannel
+          .receiveBroadcastStream()
+          .map((event) => NotificationRemovedEvent.fromMap(event));
+      return _notificationRemovedStream;
     }
     throw NotificationException(
         'Notification API exclusively available on Android!');

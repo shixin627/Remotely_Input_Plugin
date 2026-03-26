@@ -31,8 +31,8 @@ class NotificationListener : NotificationListenerService() {
     override fun onNotificationPosted(statusBarNotification: StatusBarNotification) {
         Log.i(TAG, "onNotificationPosted: ${statusBarNotification.packageName}")
 //        if (statusBarNotification.tag != null) {
-        val millisSinceEpoch: Long = currentTimeMillis()
-        val idString = millisSinceEpoch.toString()
+        // Use sbn.postTime as a stable ID — consistent with getActiveNotificationsSnapshot()
+        val idString = statusBarNotification.postTime.toString()
         // Retrieve extra object from notification to extract payload.
         val packageName = statusBarNotification.packageName
         val notification = statusBarNotification.notification

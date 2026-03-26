@@ -17,14 +17,14 @@ class NotificationListener : NotificationListenerService() {
         super.onListenerConnected()
         isConnected = true
         instance = this
-        Log.i(TAG, "🟢 NotificationListener SERVICE CONNECTED")
+        Log.d(TAG, "NotificationListener SERVICE CONNECTED")
     }
 
     override fun onListenerDisconnected() {
         super.onListenerDisconnected()
         isConnected = false
         instance = null
-        Log.w(TAG, "🔴 NotificationListener SERVICE DISCONNECTED")
+        Log.d(TAG, "NotificationListener SERVICE DISCONNECTED")
         // Note: Android may call requestRebind() here if app is in foreground
     }
 
@@ -51,14 +51,10 @@ class NotificationListener : NotificationListenerService() {
 
 
         if (extraTitle.isNotEmpty() and (extraTitle != "null")) {
-            // 置入通知包裝的標題
-            Log.i(TAG, "標題: ${extraTitle.length}")
             intent.putExtra(NOTIFICATION_PACKAGE_TITLE, extraTitle)
         }
 
         if (extraText.isNotEmpty() and (extraText != "null")) {
-            // 置入通知包裝的文字內容
-            Log.i(TAG, "內容: ${extraText.length}")
             intent.putExtra(NOTIFICATION_PACKAGE_MESSAGE, extraText)
         }
 
@@ -82,7 +78,7 @@ class NotificationListener : NotificationListenerService() {
                     mNotificationObject!!.actions.add(action)
 
                     if (action.remoteInputs != null) { // make remoteInputs contained in the action
-                        Log.i(TAG, "There is remote input action in notification")
+                        Log.d(TAG, "There is remote input action in notification")
                         val remoteInputs = action.remoteInputs
                         val remoteInputArrayList = ArrayList(listOf(*remoteInputs))
                         mNotificationObject!!.remoteInputs.addAll(remoteInputArrayList)
@@ -105,7 +101,7 @@ class NotificationListener : NotificationListenerService() {
             }
 
             if (extraTitle.isNotEmpty() and (extraText != "null") && extraText.isNotEmpty() and (extraText != "null")) {
-                Log.i(TAG, "Normal notification bundle: $mNotificationObject was received.")
+                Log.d(TAG, "Normal notification bundle: $mNotificationObject was received.")
                 notificationsMap[idString] = mNotificationObject!!
                 // Store bidirectional key mappings for dismiss sync
                 val sbnKey = statusBarNotification.key
@@ -125,14 +121,14 @@ class NotificationListener : NotificationListenerService() {
         if (customId != null) {
             idToSbnKeyMap.remove(customId)
             notificationsMap.remove(customId)
-            Log.i(TAG, "Notification removed: sbnKey=$sbnKey, customId=$customId")
+            Log.d(TAG, "Notification removed: sbnKey=$sbnKey, customId=$customId")
 
             val intent = Intent(NOTIFICATION_REMOVED_INTENT)
             intent.putExtra(NOTIFICATION_ID, customId)
             intent.putExtra(NOTIFICATION_PACKAGE_NAME, statusBarNotification.packageName)
             sendBroadcast(intent)
         } else {
-            Log.i(TAG, "Notification removed but no mapping found: sbnKey=$sbnKey")
+            Log.d(TAG, "Notification removed but no mapping found: sbnKey=$sbnKey")
         }
     }
 
@@ -275,7 +271,7 @@ class NotificationListener : NotificationListenerService() {
                 map["category"] = category
                 result.add(map)
             }
-            Log.i(TAG, "getActiveNotificationsSnapshot: ${result.size} notifications")
+            Log.d(TAG, "getActiveNotificationsSnapshot: ${result.size} notifications")
             return result
         }
     }

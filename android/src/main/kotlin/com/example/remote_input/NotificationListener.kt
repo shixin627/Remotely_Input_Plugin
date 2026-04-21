@@ -10,8 +10,6 @@ import java.lang.System.currentTimeMillis
 import java.util.*
 
 class NotificationListener : NotificationListenerService() {
-    private var mPreviousNotificationKey: String? = null
-    private var mPreviousId: String? = null
 
     override fun onListenerConnected() {
         super.onListenerConnected()
@@ -30,13 +28,21 @@ class NotificationListener : NotificationListenerService() {
 
     override fun onNotificationPosted(statusBarNotification: StatusBarNotification) {
         Log.i(TAG, "onNotificationPosted: ${statusBarNotification.packageName}")
-//        if (statusBarNotification.tag != null) {
-        // Use sbn.postTime as a stable ID — consistent with getActiveNotificationsSnapshot()
-        val idString = statusBarNotification.postTime.toString()
-        // Retrieve extra object from notification to extract payload.
+
         val packageName = statusBarNotification.packageName
         val notification = statusBarNotification.notification
         val extrasBundle = notification.extras
+        val sbnKey = statusBarNotification.key
+
+        // Reuse the existing id when this sbn.key is an update to a
+        // notification we've already seen, otherwise mint a new one from
+        // postTime. CallStyle notifications (Messenger, Pixel Dialer…)
+        // fire NotificationManager.notify() 2–3 times within <100 ms
+        // while the Person/action supplier resolves — each post gets a
+        // fresh postTime. Keying our id off sbn.key keeps it stable
+        // across those updates so onNotificationRemoved's dismiss id
+        // still matches what the watch currently shows.
+        val idString = sbnKeyToIdMap[sbnKey] ?: statusBarNotification.postTime.toString()
 
         val intent = Intent(NOTIFICATION_INTENT)
         // 置入APP包裝名稱
@@ -59,7 +65,6 @@ class NotificationListener : NotificationListenerService() {
         val extraTitle = extrasBundle.getCharSequence(Notification.EXTRA_TITLE).toString()
         val extraText = extrasBundle.getCharSequence(Notification.EXTRA_TEXT).toString()
 
-
         if (extraTitle.isNotEmpty() and (extraTitle != "null")) {
             intent.putExtra(NOTIFICATION_PACKAGE_TITLE, extraTitle)
         }
@@ -68,61 +73,52 @@ class NotificationListener : NotificationListenerService() {
             intent.putExtra(NOTIFICATION_PACKAGE_MESSAGE, extraText)
         }
 
-        if (statusBarNotification.key != mPreviousNotificationKey || idString != mPreviousId) {
-            mPreviousNotificationKey = statusBarNotification.key
-            mPreviousId = idString
+        mNotificationObject = NotificationWear()
+        mNotificationObject!!.id = idString
+        // 置入ID(時間標籤)
+        intent.putExtra(NOTIFICATION_ID, idString)
 
-            mNotificationObject = NotificationWear()
-            mNotificationObject!!.id = idString
-            // 置入ID(時間標籤)
-            intent.putExtra(NOTIFICATION_ID, idString)
+        mNotificationObject!!.packageName = packageName
+        mNotificationObject!!.tag = statusBarNotification.tag
+        mNotificationObject!!.key = sbnKey
+        mNotificationObject!!.bundle = extrasBundle
+        if (notification.actions != null) {
+            for (action in notification.actions) {
+                // Store all actions
+                mNotificationObject!!.actions.add(action)
 
-            mNotificationObject!!.packageName = packageName
-            mNotificationObject!!.tag = statusBarNotification.tag
-            mNotificationObject!!.key = statusBarNotification.key
-            mNotificationObject!!.bundle = extrasBundle
-//                Log.i(TAG, "Notification is: $notification")
-            if (notification.actions != null) {
-                for (action in notification.actions) {
-                    // Store all actions
-                    mNotificationObject!!.actions.add(action)
-
-                    if (action.remoteInputs != null) { // make remoteInputs contained in the action
-                        Log.d(TAG, "There is remote input action in notification")
-                        val remoteInputs = action.remoteInputs
-                        val remoteInputArrayList = ArrayList(listOf(*remoteInputs))
-                        mNotificationObject!!.remoteInputs.addAll(remoteInputArrayList)
-                        mNotificationObject!!.pendingIntent = action.actionIntent
-                        intent.putExtra(NOTIFICATION_REMOTE_INPUT, "$remoteInputArrayList")
-                    }
+                if (action.remoteInputs != null) { // make remoteInputs contained in the action
+                    Log.d(TAG, "There is remote input action in notification")
+                    val remoteInputs = action.remoteInputs
+                    val remoteInputArrayList = ArrayList(listOf(*remoteInputs))
+                    mNotificationObject!!.remoteInputs.addAll(remoteInputArrayList)
+                    mNotificationObject!!.pendingIntent = action.actionIntent
+                    intent.putExtra(NOTIFICATION_REMOTE_INPUT, "$remoteInputArrayList")
                 }
-
-                // Store all action titles
-                val actionTitles = ArrayList<String>()
-                for (action in notification.actions) {
-                    if (action.title != null) {
-                        actionTitles.add(action.title.toString())
-                    } else {
-                        actionTitles.add("Unknown Action")
-                    }
-                }
-                intent.putStringArrayListExtra(NOTIFICATION_ACTIONS_TITLES, actionTitles)
-                intent.putExtra(NOTIFICATION_ACTIONS_COUNT, actionTitles.size)
             }
 
-            if (extraTitle.isNotEmpty() and (extraText != "null") && extraText.isNotEmpty() and (extraText != "null")) {
-                Log.d(TAG, "Normal notification bundle: $mNotificationObject was received.")
-                notificationsMap[idString] = mNotificationObject!!
-                // Store bidirectional key mappings for dismiss sync
-                val sbnKey = statusBarNotification.key
-                sbnKeyToIdMap[sbnKey] = idString
-                idToSbnKeyMap[idString] = sbnKey
-                sendBroadcast(intent)
+            // Store all action titles
+            val actionTitles = ArrayList<String>()
+            for (action in notification.actions) {
+                if (action.title != null) {
+                    actionTitles.add(action.title.toString())
+                } else {
+                    actionTitles.add("Unknown Action")
+                }
             }
-//        mNotificationObject = extractWearNotification(statusBarNotification)
-//        val intent = mNotificationObject?.let { createIntent(it) }
+            intent.putStringArrayListExtra(NOTIFICATION_ACTIONS_TITLES, actionTitles)
+            intent.putExtra(NOTIFICATION_ACTIONS_COUNT, actionTitles.size)
         }
-//        }
+
+        if (extraTitle.isNotEmpty() and (extraText != "null") && extraText.isNotEmpty() and (extraText != "null")) {
+            Log.d(TAG, "Normal notification bundle: $mNotificationObject was received.")
+            notificationsMap[idString] = mNotificationObject!!
+            // Store bidirectional key mappings for dismiss sync. Safe to
+            // overwrite on updates — idString is already the stable one.
+            sbnKeyToIdMap[sbnKey] = idString
+            idToSbnKeyMap[idString] = sbnKey
+            sendBroadcast(intent)
+        }
     }
 
     override fun onNotificationRemoved(statusBarNotification: StatusBarNotification) {

@@ -17,6 +17,7 @@ class NotificationReceiver internal constructor(private val eventSink: EventSink
         val actionTitles = intent.getStringArrayListExtra(NotificationListener.NOTIFICATION_ACTIONS_TITLES)
         val actionsCount = intent.getIntExtra(NotificationListener.NOTIFICATION_ACTIONS_COUNT, 0)
         val category = intent.getStringExtra(NotificationListener.NOTIFICATION_CATEGORY)
+        val callType = intent.getIntExtra(NotificationListener.NOTIFICATION_CALL_TYPE, 0)
 
         val map = HashMap<String, Any?>()
 
@@ -28,6 +29,7 @@ class NotificationReceiver internal constructor(private val eventSink: EventSink
         map["actionTitles"] = actionTitles
         map["actionsCount"] = actionsCount
         map["category"] = category
+        map["callType"] = callType
 
         if (packageTitle!=null&& packageMessage!=null) {
             eventSink.success(map)

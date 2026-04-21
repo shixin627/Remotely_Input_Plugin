@@ -43,6 +43,23 @@ class NotificationAction {
   }
 }
 
+/// CallStyle callType values from Android's Notification.CallStyle
+/// (mirrors Notification.CALL_TYPE_* constants, API 31+).
+class NotificationCallType {
+  /// Not a CallStyle notification, or dialer predates API 31.
+  static const int unknown = 0;
+
+  /// Ringing incoming call.
+  static const int incoming = 1;
+
+  /// Active call — covers both an answered incoming call AND any
+  /// outgoing call the user placed from the dialer.
+  static const int ongoing = 2;
+
+  /// Call screening (e.g. Google Call Screen).
+  static const int screening = 3;
+}
+
 class NotificationEvent {
   String id; //id is timestamp (millisecondsSinceEpoch)
   String packageName;
@@ -52,6 +69,11 @@ class NotificationEvent {
   String? remoteInputSymbol;
   List<NotificationAction> actions;
   String? category; // Notification category (call, msg, email, social, etc.)
+
+  /// For [category] == "call": CallStyle's callType. See [NotificationCallType].
+  /// 0 on non-call notifications or when the dialer did not set
+  /// Notification.EXTRA_CALL_TYPE.
+  int callType;
   DateTime receivedAt = DateTime.now();
 
   NotificationEvent({
@@ -63,6 +85,7 @@ class NotificationEvent {
     this.remoteInputSymbol,
     this.actions = const [],
     this.category,
+    this.callType = NotificationCallType.unknown,
   });
 
   factory NotificationEvent.fromMap(Map<dynamic, dynamic> map) {
@@ -74,6 +97,7 @@ class NotificationEvent {
     final remoteInputSymbol = map['remoteInputSymbol'];
     bool withRemoteInput = remoteInputSymbol != null ? true : false;
     final category = map['category']; // Extract notification category
+    final callType = (map['callType'] as int?) ?? NotificationCallType.unknown;
     List<NotificationAction> actions = [];
     if (map['actions'] != null) {
       for (var i = 0; i < map['actions'].length; i++) {
@@ -90,6 +114,7 @@ class NotificationEvent {
       remoteInputSymbol: remoteInputSymbol,
       actions: actions,
       category: category,
+      callType: callType,
     );
   }
 
@@ -103,6 +128,7 @@ class NotificationEvent {
       'remoteInputSymbol': remoteInputSymbol,
       'actions': actions.map((a) => a.toMap()).toList(),
       'category': category,
+      'callType': callType,
     };
   }
 

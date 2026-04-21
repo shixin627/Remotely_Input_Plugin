@@ -46,6 +46,16 @@ class NotificationListener : NotificationListenerService() {
         val category = notification.category
         intent.putExtra(NOTIFICATION_CATEGORY, category ?: "")
 
+        // 提取 CallStyle 的 callType（Android 12+ / API 31+）。
+        // 1=INCOMING (ringing), 2=ONGOING (active, including outgoing),
+        // 3=SCREENING, 0=unknown/not a CallStyle notification.
+        // We key off the string "android.callType" so this also works on
+        // API < 31 when a dialer happens to set the extra manually.
+        val callType = if (category == "call") {
+            extrasBundle.getInt("android.callType", 0)
+        } else 0
+        intent.putExtra(NOTIFICATION_CALL_TYPE, callType)
+
         val extraTitle = extrasBundle.getCharSequence(Notification.EXTRA_TITLE).toString()
         val extraText = extrasBundle.getCharSequence(Notification.EXTRA_TEXT).toString()
 
@@ -179,6 +189,7 @@ class NotificationListener : NotificationListenerService() {
         const val NOTIFICATION_ACTIONS_TITLES = "notification_actions_titles"
         const val NOTIFICATION_ACTIONS_COUNT = "notification_actions_count"
         const val NOTIFICATION_CATEGORY = "notification_category"
+        const val NOTIFICATION_CALL_TYPE = "notification_call_type"
         var mNotificationObject: NotificationWear? = null
         var notificationsMap = hashMapOf<String, NotificationWear>()
 
@@ -220,6 +231,9 @@ class NotificationListener : NotificationListenerService() {
                 if (title == "null" && text == "null") continue
 
                 val category = notification.category ?: ""
+                val callType = if (category == "call") {
+                    extras.getInt("android.callType", 0)
+                } else 0
 
                 // Generate a stable ID based on sbn.key hash + postTime
                 val idString = sbn.postTime.toString()
@@ -269,6 +283,7 @@ class NotificationListener : NotificationListenerService() {
                 map["actionTitles"] = actionTitles
                 map["actionsCount"] = actionTitles.size
                 map["category"] = category
+                map["callType"] = callType
                 result.add(map)
             }
             Log.d(TAG, "getActiveNotificationsSnapshot: ${result.size} notifications")

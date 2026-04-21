@@ -60,6 +60,24 @@ class NotificationCallType {
   static const int screening = 3;
 }
 
+/// Bitmask values from Android's [Notification] flags field. Useful for
+/// filtering out service-style notifications that aren't real messages
+/// (e.g. Messenger chat heads, VPN indicators, ongoing downloads).
+class NotificationFlags {
+  /// `FLAG_ONGOING_EVENT` — persistent ongoing event (music, calls,
+  /// downloads). User cannot swipe to dismiss.
+  static const int ongoingEvent = 0x00000002;
+
+  /// `FLAG_NO_CLEAR` — not cleared by the "Clear all" button.
+  static const int noClear = 0x00000020;
+
+  /// `FLAG_FOREGROUND_SERVICE` — notification tied to a running
+  /// foreground service (e.g. Messenger chat heads bubble service,
+  /// VPN connection indicator). Almost always framework placeholder
+  /// text, not a user-facing message.
+  static const int foregroundService = 0x00000040;
+}
+
 class NotificationEvent {
   String id; //id is timestamp (millisecondsSinceEpoch)
   String packageName;
@@ -74,6 +92,12 @@ class NotificationEvent {
   /// 0 on non-call notifications or when the dialer did not set
   /// Notification.EXTRA_CALL_TYPE.
   int callType;
+
+  /// Raw Android notification flags bitmask. Check bits against
+  /// [NotificationFlags] constants, or use the convenience getters
+  /// [isForegroundService] / [isOngoing] / [isNoClear].
+  int flags;
+
   DateTime receivedAt = DateTime.now();
 
   NotificationEvent({
@@ -86,7 +110,23 @@ class NotificationEvent {
     this.actions = const [],
     this.category,
     this.callType = NotificationCallType.unknown,
+    this.flags = 0,
   });
+
+  /// True when [Notification.FLAG_FOREGROUND_SERVICE] is set — i.e. this
+  /// notification is tied to a running foreground service (chat heads,
+  /// VPN, screen recording...). Usually safe to skip when forwarding
+  /// "real" messages to another surface.
+  bool get isForegroundService =>
+      (flags & NotificationFlags.foregroundService) != 0;
+
+  /// True when [Notification.FLAG_ONGOING_EVENT] is set — persistent
+  /// ongoing event like media playback, active call, running download.
+  bool get isOngoing => (flags & NotificationFlags.ongoingEvent) != 0;
+
+  /// True when [Notification.FLAG_NO_CLEAR] is set — cannot be
+  /// dismissed via "Clear all".
+  bool get isNoClear => (flags & NotificationFlags.noClear) != 0;
 
   factory NotificationEvent.fromMap(Map<dynamic, dynamic> map) {
     String id = map['id'];
@@ -98,6 +138,7 @@ class NotificationEvent {
     bool withRemoteInput = remoteInputSymbol != null ? true : false;
     final category = map['category']; // Extract notification category
     final callType = (map['callType'] as int?) ?? NotificationCallType.unknown;
+    final flags = (map['flags'] as int?) ?? 0;
     List<NotificationAction> actions = [];
     if (map['actions'] != null) {
       for (var i = 0; i < map['actions'].length; i++) {
@@ -115,6 +156,7 @@ class NotificationEvent {
       actions: actions,
       category: category,
       callType: callType,
+      flags: flags,
     );
   }
 
@@ -129,6 +171,7 @@ class NotificationEvent {
       'actions': actions.map((a) => a.toMap()).toList(),
       'category': category,
       'callType': callType,
+      'flags': flags,
     };
   }
 

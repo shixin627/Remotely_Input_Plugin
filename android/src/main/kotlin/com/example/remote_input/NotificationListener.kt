@@ -62,6 +62,13 @@ class NotificationListener : NotificationListenerService() {
         } else 0
         intent.putExtra(NOTIFICATION_CALL_TYPE, callType)
 
+        // Expose raw notification flags so the app can filter background
+        // service notifications (FLAG_FOREGROUND_SERVICE = 0x40, e.g.
+        // Messenger chat heads' "聊天大頭貼使用中", VPN indicators,
+        // download progress banners). These are framework-required
+        // placeholders, not user-facing messages.
+        intent.putExtra(NOTIFICATION_FLAGS, notification.flags)
+
         val extraTitle = extrasBundle.getCharSequence(Notification.EXTRA_TITLE).toString()
         val extraText = extrasBundle.getCharSequence(Notification.EXTRA_TEXT).toString()
 
@@ -186,6 +193,7 @@ class NotificationListener : NotificationListenerService() {
         const val NOTIFICATION_ACTIONS_COUNT = "notification_actions_count"
         const val NOTIFICATION_CATEGORY = "notification_category"
         const val NOTIFICATION_CALL_TYPE = "notification_call_type"
+        const val NOTIFICATION_FLAGS = "notification_flags"
         var mNotificationObject: NotificationWear? = null
         var notificationsMap = hashMapOf<String, NotificationWear>()
 
@@ -280,6 +288,7 @@ class NotificationListener : NotificationListenerService() {
                 map["actionsCount"] = actionTitles.size
                 map["category"] = category
                 map["callType"] = callType
+                map["flags"] = notification.flags
                 result.add(map)
             }
             Log.d(TAG, "getActiveNotificationsSnapshot: ${result.size} notifications")
